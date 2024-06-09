@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<!-- Vue js CDN -->
+	<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+	<!-- Axios CDN -->
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	<!-- Bootstrap 5 CDN-->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+	<title>Best Stocks Finder</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body class="bg-dark">
+	<!-- mounted vue app div -->
+	<div id="app" class="container-fluid text-white">
+		<!-- app description -->
+		<div class="p-5 mt-4 bg-primary text-white rounded">
+			<h1>Best Stocks Finder</h1>
+			<p>
+				Choose your strategy and time frame and let the algorithm find the best stocks right now (<strong>this is not a financial advice</strong>).
+			</p>
+		</div>
+		
+		<!-- parameters -->
+		<div class="row p-3">
+			<!-- choose time frame -->
+			<div class="col-sm-6 p-2">
+				<h4> Time frame: </h4>
+				<select 
+					data-bs-theme="dark" 
+					class="form-select" 
+					name="timeframes" 
+					id="timeframes" 
+					v-model="selectedTimeFrame"
+				>
+					<!-- prompt - default not selectable option -->
+					<option v-bind:value="null" disabled selected>
+						Select your option
+					</option>
+					<!-- available time frames from api -->
+					<option v-bind:value="timeFrame" v-for="timeFrame in timeFrames">
+						{{ timeFrame }}
+					</option>
+				</select>
+			</div>
+			<!-- decide whether to short sell or long buy -->
+			<div class="col-sm-6 p-2">
+				<h4> Strategy: </h4>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" id="radioShortSell" v-bind:value="true" v-model="shortSell">
+					<label class="form-check-label" for="radioShortSell">Short Sell</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" id="radioLongBuy" v-bind:value="false" v-model="shortSell">
+					<label class="form-check-label" for="radioLongBuy">Long Buy</label>
+				</div>
+			</div>
+		</div>
+		
+		<!-- table of the best stocks -->
+		<div class="p-3 table-responsive" v-if="parametersReady">
+			<h4> Best stocks: </h4>
+			<table class="table table-dark">
+				<thead>
+					<tr>
+						<th 
+							v-bind:class="{'table-active' : colName == selectedTimeFrame && dataFetched}" 
+							v-for="colName in colNames"
+						>
+							{{ colName.toUpperCase() }}
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="bestStock in bestStocks">
+						<td 
+							v-bind:class="{'table-active' : stockProperty == selectedTimeFrame && dataFetched}" 
+							v-for="stockProperty in colNames"
+						>
+							{{ bestStock[stockProperty] }}
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<div class="row">
+				<div class="col-sm-1 offset-sm-11">
+					<button 
+						type="button" 
+						class="btn btn-primary" 
+						v-on:click="getBestStocks" 
+						v-bind:disabled="!dataFetched"
+					>
+						Refresh
+					</button>
+				</div>	
+			</div>
+		</div>
+	</div>
+
+
+	<script>
+		const app = Vue.createApp({
+			data() {
+				return {
+					selectedTimeFrame: null,
+					shortSell: false,
+					timeFrames: [],
+					bestStocks: [],
+					dataFetched: false
+				}
+			},
+			computed: {
+				// column names for the table with the best stocks
+				colNames() {
+					// get column names from the first best stock object if there is any
+					if(this.bestStocks.length > 0) {
+						return Object.keys(this.bestStocks[0]);
+					}
+					else {
+						return [];
+					}
+				},
+				// check if all parameters have values, if so, call the best stocks api
+				parametersReady() {
+					if(this.selectedTimeFrame != null && this.shortSell != null) {
+						this.getBestStocks();
+						return true;
+					}
+					return false;
+				}
+			},
+			methods: {
+				// list of the best stocks
+				getBestStocks() {
+					// make api call to fetch the best stocks
+					this.dataFetched = false;
+					axios
+						.get('http://127.0.0.1:8000/get-best-stocks', {
+							params: {
+								short_sell: this.shortSell,
+								time_frame: this.selectedTimeFrame
+							}
+						})
+						.then(response => {
+								this.bestStocks = response.data;
+								this.dataFetched = true;
+						})
+				}
+			},
+			mounted() {
+				// make api call to fetch available time frames
+				axios
+					.get('http://127.0.0.1:8000/get-possible-time-frames')
+					.then(response => {
+						this.timeFrames = response.data;
+					})
+			}
+		})
+		app.mount('#app')
+  	</script>
+</body>
+</html>
