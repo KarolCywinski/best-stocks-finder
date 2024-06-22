@@ -1,4 +1,5 @@
 # Best Stocks Finder :bar_chart:
+![best-stocks-finder](https://github.com/KarolCywinski/best-stocks-finder/assets/167247117/3ffc84ca-8d36-4596-9161-4116f711d07b)
 ## What is it 🧐
 This is a website application designed for finding "the best" deals :moneybag: in the stock market.
 
